@@ -1,0 +1,20 @@
+{
+  "workflow_name": "test",
+  "workflow_id": "workflow-1753364156528",
+  "node_count": 8,
+  "operation_types": [
+    "sdl1SolutionPreparation",
+    "sdl1ElectrochemicalMeasurement",
+    "sdl1DataExport",
+    "sdl1ElectrodeSetup",
+    "sdl1ExperimentSetup",
+    "sdl1SequenceControl",
+    "sdl1CycleCounter",
+    "sdl1WashCleaning"
+  ],
+  "total_parameters": 163,
+  "new_format_features": [
+    "executionFlow",
+    "parameterGroups"
+  ]
+}

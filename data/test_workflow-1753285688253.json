@@ -1,0 +1,209 @@
+{
+  "metadata": {
+    "id": "workflow-1753285688253",
+    "name": "test",
+    "description": "",
+    "createdAt": "2025-07-23T15:48:08.253Z",
+    "updatedAt": "2025-07-23T15:48:08.253Z",
+    "author": "user",
+    "version": "1.0",
+    "tags": []
+  },
+  "workflow": {
+    "nodes": [
+      {
+        "id": "sdl1SolutionPreparation_dndnode_0",
+        "type": "sdl1SolutionPreparation",
+        "label": "Solution Preparation",
+        "params": {
+          "uo_name": "ZnSO4_Solution_Prep",
+          "description": "Prepare 5mL ZnSO4 solution for electrodeposition",
+          "wait_before": 0,
+          "wait_after": 0,
+          "error_handling": "stop",
+          "log_level": "INFO",
+          "source_labware": "vial_rack_2",
+          "source_well": "A1",
+          "target_labware": "nis_reactor",
+          "target_well": "A1",
+          "volume": 5000,
+          "pipette_type": "p1000_single_gen2",
+          "aspiration_offset_z": 8,
+          "dispense_offset_x": -1,
+          "dispense_offset_y": 0.5,
+          "dispense_offset_z": 0
+        },
+        "preserveAsUO": true,
+        "metadata": {
+          "category": "SDL1",
+          "description": "Automated solution preparation and dispensing",
+          "primitiveOperations": [],
+          "executionSteps": []
+        }
+      },
+      {
+        "id": "sdl1ElectrodeSetup_dndnode_1",
+        "type": "sdl1ElectrodeSetup",
+        "label": "Electrode Setup",
+        "params": {
+          "uo_name": "Reference_Electrode_Setup",
+          "description": "Setup reference electrode for electrochemical measurement",
+          "wait_before": 0,
+          "wait_after": 0,
+          "error_handling": "stop",
+          "log_level": "INFO",
+          "electrode_type": "reference",
+          "electrode_position": "A2",
+          "target_well": "A1",
+          "insertion_depth": 26,
+          "lateral_offset_x": 0.5,
+          "lateral_offset_y": 0.5,
+          "movement_speed": 50
+        },
+        "preserveAsUO": true,
+        "metadata": {
+          "category": "SDL1",
+          "description": "Electrode installation and positioning for electrochemical experiments",
+          "primitiveOperations": [],
+          "executionSteps": []
+        }
+      },
+      {
+        "id": "sdl1ElectrochemicalMeasurement_dndnode_2",
+        "type": "sdl1ElectrochemicalMeasurement",
+        "label": "Electrochemical Measurement",
+        "params": {
+          "uo_name": "Zn_Electrodeposition_Sequence",
+          "description": "Complete electrodeposition sequence: deposition, rest, EIS, dissolution",
+          "wait_before": 0,
+          "wait_after": 0,
+          "error_handling": "stop",
+          "log_level": "INFO",
+          "com_port": "COM4",
+          "channel": 0,
+          "measurement_type": "CP",
+          "deposition_current": -0.004,
+          "deposition_duration": 720,
+          "deposition_sample_interval": 1,
+          "dissolution_current": 0.004,
+          "dissolution_duration": 720,
+          "dissolution_sample_interval": 1,
+          "ocv_duration": 60,
+          "ocv_sample_interval": 1,
+          "peis_start_frequency": 10000,
+          "peis_end_frequency": 0.1,
+          "peis_points_per_decade": 5,
+          "peis_ac_amplitude": 0.01,
+          "peis_dc_bias": 0,
+          "peis_bias_vs_ocp": true,
+          "peis_minimum_cycles": 1,
+          "cp_current": -0.004,
+          "cp_duration": 720,
+          "cp_sample_interval": 1,
+          "cp_voltage_limit_min": -2,
+          "cp_voltage_limit_max": 2
+        },
+        "preserveAsUO": true,
+        "metadata": {
+          "category": "SDL1",
+          "description": "Various electrochemical measurement techniques (OCV, CP, CVA, PEIS, LSV)",
+          "primitiveOperations": [],
+          "executionSteps": []
+        }
+      },
+      {
+        "id": "sdl1WashCleaning_dndnode_3",
+        "type": "sdl1WashCleaning",
+        "label": "Wash/Cleaning",
+        "params": {
+          "uo_name": "Electrode_Cleaning_Sequence",
+          "description": "Multi-stage electrode and reactor cleaning with ultrasonic treatment",
+          "wait_before": 0,
+          "wait_after": 0,
+          "error_handling": "stop",
+          "log_level": "INFO",
+          "cleaning_tool_position": "B1",
+          "target_well": "A1",
+          "pump1_volume": 10,
+          "pump2_volume": 4,
+          "ultrasonic_time": 5000,
+          "final_wash_volume": 10,
+          "insertion_depth": 57,
+          "cleaning_cycles": 2
+        },
+        "preserveAsUO": true,
+        "metadata": {
+          "category": "SDL1",
+          "description": "Electrode and reactor cleaning operations",
+          "primitiveOperations": [],
+          "executionSteps": []
+        }
+      },
+      {
+        "id": "sdl1DataExport_dndnode_4",
+        "type": "sdl1DataExport",
+        "label": "Data Export",
+        "params": {
+          "uo_name": "Experiment_Data_Export",
+          "description": "Export DC/AC electrochemical data and metadata to CSV files",
+          "wait_before": 0,
+          "wait_after": 0,
+          "error_handling": "stop",
+          "log_level": "INFO",
+          "export_format": "CSV",
+          "file_naming": "{experiment_id}_{data_type}",
+          "include_metadata": true,
+          "separate_ac_dc_files": true,
+          "data_path": "./data",
+          "dc_columns": [
+            "timestamp_s",
+            "current_A",
+            "we_voltage_V"
+          ],
+          "ac_columns": [
+            "timestamp",
+            "frequency",
+            "absoluteImpedance",
+            "realImpedance",
+            "imagImpedance",
+            "phaseAngle",
+            "numberOfCycles"
+          ],
+          "metadata_fields": "date,time,runNumber,experimentID,status,notes"
+        },
+        "preserveAsUO": true,
+        "metadata": {
+          "category": "SDL1",
+          "description": "Export experimental data to various file formats",
+          "primitiveOperations": [],
+          "executionSteps": []
+        }
+      },
+      {
+        "id": "sdl1SequenceControl_dndnode_5",
+        "type": "sdl1SequenceControl",
+        "label": "Sequence Control",
+        "params": {
+          "uo_name": "",
+          "description": "",
+          "wait_before": 0,
+          "wait_after": 0,
+          "error_handling": "continue",
+          "log_level": "INFO",
+          "loop_type": "fixed_count",
+          "loop_count": 3,
+          "loop_condition": "voltage_threshold",
+          "break_condition": "voltage < -1.5"
+        },
+        "preserveAsUO": true,
+        "metadata": {
+          "category": "SDL1",
+          "description": "Loop and conditional control for experimental sequences",
+          "primitiveOperations": [],
+          "executionSteps": []
+        }
+      }
+    ],
+    "edges": []
+  }
+}

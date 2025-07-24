@@ -1,0 +1,175 @@
+{
+  "recovery_settings": {
+    "enable_recovery": true,
+    "checkpoint_directory": "checkpoints",
+    "max_checkpoint_age_hours": 24,
+    "auto_cleanup_checkpoints": true
+  },
+  
+  "retry_policies": {
+    "pipetting_operations": {
+      "max_retries": 3,
+      "retry_delay_seconds": 2,
+      "backoff_multiplier": 1.5
+    },
+    "electrode_operations": {
+      "max_retries": 2,
+      "retry_delay_seconds": 5,
+      "backoff_multiplier": 2.0
+    },
+    "electrochemical_measurements": {
+      "max_retries": 1,
+      "retry_delay_seconds": 10,
+      "backoff_multiplier": 1.0
+    },
+    "cleaning_operations": {
+      "max_retries": 2,
+      "retry_delay_seconds": 3,
+      "backoff_multiplier": 1.2
+    }
+  },
+  
+  "error_severity_mapping": {
+    "PipettingError": "minor",
+    "ElectrodeError": "moderate", 
+    "ElectrochemicalError": "moderate",
+    "CleaningError": "minor",
+    "CommunicationError": "severe",
+    "SystemError": "critical"
+  },
+  
+  "recovery_actions": {
+    "minor": {
+      "primary_action": "retry",
+      "fallback_action": "restart_from_checkpoint",
+      "max_attempts": 3
+    },
+    "moderate": {
+      "primary_action": "restart_from_checkpoint",
+      "fallback_action": "safe_stop",
+      "max_attempts": 2
+    },
+    "severe": {
+      "primary_action": "safe_stop",
+      "fallback_action": "manual_intervention",
+      "max_attempts": 1
+    },
+    "critical": {
+      "primary_action": "emergency_stop",
+      "fallback_action": "emergency_stop",
+      "max_attempts": 0
+    }
+  },
+  
+  "checkpoint_strategy": {
+    "critical_checkpoints": [
+      "experiment_setup_complete",
+      "solution_preparation_complete",
+      "electrode_setup_complete", 
+      "measurement_cycle_complete",
+      "cleaning_complete"
+    ],
+    "auto_checkpoint_frequency": "after_each_operation",
+    "checkpoint_compression": false,
+    "include_robot_state": true,
+    "include_experiment_data": true
+  },
+  
+  "safety_settings": {
+    "safe_stop_actions": [
+      "stop_all_movements",
+      "disable_temperature_control",
+      "save_emergency_state",
+      "notify_operators"
+    ],
+    "emergency_stop_actions": [
+      "immediate_stop_all",
+      "disable_all_systems",
+      "save_emergency_state",
+      "alert_emergency_contacts"
+    ],
+    "recovery_timeout_seconds": 300,
+    "manual_intervention_timeout_seconds": 1800
+  },
+  
+  "monitoring": {
+    "log_all_recovery_attempts": true,
+    "track_recovery_statistics": true,
+    "alert_on_repeated_failures": true,
+    "failure_threshold_for_alert": 3,
+    "performance_metrics": {
+      "track_recovery_time": true,
+      "track_success_rates": true,
+      "track_checkpoint_overhead": true
+    }
+  },
+  
+  "notification_settings": {
+    "enable_notifications": false,
+    "notification_methods": ["log", "email", "dashboard"],
+    "notification_levels": {
+      "info": ["log"],
+      "warning": ["log", "dashboard"],
+      "error": ["log", "dashboard", "email"],
+      "critical": ["log", "dashboard", "email", "sms"]
+    },
+    "email_settings": {
+      "smtp_server": "localhost",
+      "smtp_port": 587,
+      "sender_email": "sdl1-system@lab.com",
+      "recipient_emails": ["operator@lab.com"]
+    }
+  },
+  
+  "operation_specific_settings": {
+    "sdl1ExperimentSetup": {
+      "enable_recovery": true,
+      "checkpoint_after": true,
+      "max_retries": 2,
+      "critical_parameters": ["experiment_id", "temperature", "pressure"]
+    },
+    "sdl1SolutionPreparation": {
+      "enable_recovery": true,
+      "checkpoint_after": true,
+      "max_retries": 3,
+      "critical_parameters": ["volume", "source_well", "target_well"],
+      "validation_checks": ["volume_range", "well_accessibility"]
+    },
+    "sdl1ElectrodeSetup": {
+      "enable_recovery": true,
+      "checkpoint_after": true,
+      "max_retries": 2,
+      "critical_parameters": ["electrode_type", "position"],
+      "validation_checks": ["electrode_connectivity", "position_accuracy"]
+    },
+    "sdl1ElectrochemicalMeasurement": {
+      "enable_recovery": true,
+      "checkpoint_after": true,
+      "max_retries": 1,
+      "critical_parameters": ["measurement_type", "scan_rate", "potential_range"],
+      "validation_checks": ["signal_quality", "baseline_stability"]
+    },
+    "sdl1WashCleaning": {
+      "enable_recovery": true,
+      "checkpoint_after": true,
+      "max_retries": 2,
+      "critical_parameters": ["cleaning_cycles", "wash_volume"],
+      "validation_checks": ["cleaning_effectiveness"]
+    },
+    "sdl1DataExport": {
+      "enable_recovery": true,
+      "checkpoint_after": false,
+      "max_retries": 3,
+      "critical_parameters": ["export_format", "file_path"],
+      "validation_checks": ["data_integrity", "file_accessibility"]
+    }
+  },
+  
+  "development_settings": {
+    "simulate_failures": false,
+    "failure_simulation_rate": 0.1,
+    "debug_recovery_process": false,
+    "verbose_logging": false,
+    "test_mode": false
+  }
+}
