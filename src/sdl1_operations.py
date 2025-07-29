@@ -261,6 +261,137 @@ class SDL1Operations:
         time.sleep(1)
         return True  # Assume verification passes
 
+    def sdl1SamplePreparation(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Sample Preparation Unit Operation
+        Enhanced version of solution preparation with additive handling and CSV-driven parameters
+        """
+        try:
+            # Extract parameters with defaults
+            target_cell = params.get("target_cell", "A1")
+            total_volume = params.get("total_volume", 3000)
+            pipette_type = params.get("pipette_type", "p1000_single_gen2")
+            move_speed = params.get("move_speed", 100)
+
+            # Additive parameters (A-G from CSV)
+            additives = {}
+            additive_volume = params.get("additive_volume", 100)
+            for letter in ['A', 'B', 'C', 'D', 'E', 'F', 'G']:
+                additives[letter] = params.get(f"additive_{letter}", 0)
+
+            # Dispense offsets
+            dispense_offset_x = params.get("dispense_offset_x", -1)
+            dispense_offset_y = params.get("dispense_offset_y", 0.5)
+            dispense_offset_z = params.get("dispense_offset_z", 0)
+
+            # Wait times
+            wait_before = params.get("wait_before", 0)
+            wait_after = params.get("wait_after", 1)
+
+            if wait_before > 0:
+                self.controller.delay(wait_before, f"Pre-operation wait: {params.get('uo_name', 'Sample Prep')}")
+
+            # Get labware IDs
+            reactor_id = self.controller.labware_registry["slot_9"]["id"]
+            vial_rack_id = self.controller.labware_registry["slot_2"]["id"]
+            tip_rack_id = self.controller.labware_registry["slot_1"]["id"]
+
+            # Step 1: Prepare base solution (main volume)
+            base_volume = total_volume
+            for letter, enabled in additives.items():
+                if enabled:
+                    base_volume -= additive_volume
+
+            if base_volume > 0:
+                # Fill base solution
+                fill_result = self.controller.fill_well(
+                    source_labware=vial_rack_id,
+                    source_well="A1",  # Base solution well
+                    dest_labware=reactor_id,
+                    dest_well=target_cell,
+                    pipette_name=pipette_type,
+                    volume=base_volume,
+                    offset_start_from="bottom",
+                    offset_start_to="top",
+                    offset_z_from=8,
+                    offset_x_to=dispense_offset_x,
+                    offset_y_to=dispense_offset_y,
+                    offset_z_to=dispense_offset_z
+                )
+
+                # Drop tip
+                self.controller.drop_tip(
+                    labware_name=tip_rack_id,
+                    well_name="A1",
+                    pipette_name=pipette_type,
+                    offset_start="bottom",
+                    offset_y=1,
+                    offset_z=7,
+                    drop_in_disposal=True
+                )
+
+            # Step 2: Add additives if enabled
+            added_additives = []
+            well_mapping = {"A": "A2", "B": "A3", "C": "A4", "D": "A5", "E": "A6", "F": "B1", "G": "B2"}
+
+            for letter, enabled in additives.items():
+                if enabled:
+                    source_well = well_mapping.get(letter, "A1")
+
+                    # Add additive
+                    additive_result = self.controller.fill_well(
+                        source_labware=vial_rack_id,
+                        source_well=source_well,
+                        dest_labware=reactor_id,
+                        dest_well=target_cell,
+                        pipette_name=pipette_type,
+                        volume=additive_volume,
+                        offset_start_from="bottom",
+                        offset_start_to="top",
+                        offset_z_from=8,
+                        offset_x_to=dispense_offset_x,
+                        offset_y_to=dispense_offset_y,
+                        offset_z_to=dispense_offset_z
+                    )
+
+                    # Drop tip
+                    self.controller.drop_tip(
+                        labware_name=tip_rack_id,
+                        well_name="A1",
+                        pipette_name=pipette_type,
+                        offset_start="bottom",
+                        offset_y=1,
+                        offset_z=7,
+                        drop_in_disposal=True
+                    )
+
+                    added_additives.append(f"Additive_{letter}")
+
+            if wait_after > 0:
+                self.controller.delay(wait_after, f"Post-operation wait: {params.get('uo_name', 'Sample Prep')}")
+
+            result = {
+                "status": "success",
+                "operation": "sample_preparation",
+                "target_cell": target_cell,
+                "total_volume": total_volume,
+                "base_volume": base_volume,
+                "additives_added": added_additives,
+                "additive_count": len(added_additives)
+            }
+
+            self.log_operation("sdl1SamplePreparation", params, result)
+            return result
+
+        except Exception as e:
+            error_result = {
+                "status": "error",
+                "operation": "sample_preparation",
+                "error": str(e)
+            }
+            self.log_operation("sdl1SamplePreparation", params, error_result)
+            return error_result
+
     def sdl1SolutionPreparation_legacy(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """
         Legacy Solution Preparation Unit Operation (without recovery)
@@ -442,6 +573,176 @@ class SDL1Operations:
                 "error": str(e)
             }
             self.log_operation("sdl1ElectrodeSetup", params, error_result)
+            return error_result
+
+    def sdl1ElectrodeManipulation(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Electrode Manipulation Unit Operation
+        Handles pickup, insert, remove, and return operations for electrodes
+        """
+        try:
+            # Extract parameters
+            operation_type = params.get("operation_type", "pickup")  # pickup, insert, remove, return
+            electrode_type = params.get("electrode_type", "reference")
+            target_cell = params.get("target_cell", "A1")
+            approach_speed = params.get("approach_speed", 50)
+            insertion_speed = params.get("insertion_speed", 25)
+
+            # Wait times
+            wait_before = params.get("wait_before", 0)
+            wait_after = params.get("wait_after", 1)
+
+            if wait_before > 0:
+                self.controller.delay(wait_before, f"Pre-operation wait: {params.get('uo_name', 'Electrode Manipulation')}")
+
+            # Get labware IDs
+            electrode_rack_id = self.controller.labware_registry["slot_10"]["id"]
+            reactor_id = self.controller.labware_registry["slot_9"]["id"]
+            pipette_type = params.get("pipette_type", "p1000_single_gen2")
+
+            result = {"status": "success", "operation": "electrode_manipulation", "operation_type": operation_type}
+
+            if operation_type == "pickup":
+                # Pickup electrode from rack
+                pickup_offset_x = params.get("pickup_offset_x", 0.6)
+                pickup_offset_y = params.get("pickup_offset_y", 0.5)
+                pickup_offset_z = params.get("pickup_offset_z", 3)
+
+                # Move to electrode rack
+                self.controller.move_to_well(
+                    labware_name=electrode_rack_id,
+                    well_name="A2",  # Default electrode position
+                    pipette_name=pipette_type,
+                    offset_start="top",
+                    offset_x=pickup_offset_x,
+                    offset_y=pickup_offset_y,
+                    offset_z=pickup_offset_z,
+                    speed=approach_speed
+                )
+
+                # Pickup electrode (simulate)
+                self.controller.pickup_tip(
+                    labware_name=electrode_rack_id,
+                    well_name="A2",
+                    pipette_name=pipette_type,
+                    offset_x=pickup_offset_x,
+                    offset_y=pickup_offset_y
+                )
+
+                result.update({
+                    "electrode_position": "A2",
+                    "pickup_location": f"{electrode_rack_id}:A2"
+                })
+
+            elif operation_type == "insert":
+                # Insert electrode into reactor cell
+                insert_offset_x = params.get("insert_offset_x", 0.5)
+                insert_offset_y = params.get("insert_offset_y", 0.5)
+                insert_approach_z = params.get("insert_approach_z", 5)
+                insert_final_z = params.get("insert_final_z", -26)
+
+                # Approach position
+                self.controller.move_to_well(
+                    labware_name=reactor_id,
+                    well_name=target_cell,
+                    pipette_name=pipette_type,
+                    offset_start="top",
+                    offset_x=insert_offset_x,
+                    offset_y=insert_offset_y,
+                    offset_z=insert_approach_z,
+                    speed=approach_speed
+                )
+
+                # Insert to final depth
+                self.controller.move_to_well(
+                    labware_name=reactor_id,
+                    well_name=target_cell,
+                    pipette_name=pipette_type,
+                    offset_start="top",
+                    offset_x=insert_offset_x,
+                    offset_y=insert_offset_y,
+                    offset_z=insert_final_z,
+                    speed=insertion_speed
+                )
+
+                result.update({
+                    "target_cell": target_cell,
+                    "insertion_depth": abs(insert_final_z),
+                    "final_position": f"{reactor_id}:{target_cell}"
+                })
+
+            elif operation_type == "remove":
+                # Remove electrode from reactor cell
+                insert_offset_x = params.get("insert_offset_x", 0.5)
+                insert_offset_y = params.get("insert_offset_y", 0.5)
+                insert_approach_z = params.get("insert_approach_z", 5)
+
+                # Move to approach position (withdraw electrode)
+                self.controller.move_to_well(
+                    labware_name=reactor_id,
+                    well_name=target_cell,
+                    pipette_name=pipette_type,
+                    offset_start="top",
+                    offset_x=insert_offset_x,
+                    offset_y=insert_offset_y,
+                    offset_z=insert_approach_z,
+                    speed=insertion_speed
+                )
+
+                result.update({
+                    "target_cell": target_cell,
+                    "removal_position": f"{reactor_id}:{target_cell}"
+                })
+
+            elif operation_type == "return":
+                # Return electrode to rack
+                return_offset_z = params.get("return_offset_z", 6)
+
+                # Move to electrode rack return position
+                self.controller.move_to_well(
+                    labware_name=electrode_rack_id,
+                    well_name="A2",
+                    pipette_name=pipette_type,
+                    offset_start="top",
+                    offset_x=0.6,
+                    offset_y=0.5,
+                    offset_z=return_offset_z,
+                    speed=approach_speed
+                )
+
+                # Drop electrode (simulate)
+                self.controller.drop_tip(
+                    labware_name=electrode_rack_id,
+                    well_name="A2",
+                    pipette_name=pipette_type,
+                    offset_start="bottom",
+                    offset_x=0.6,
+                    offset_y=0.5,
+                    offset_z=return_offset_z,
+                    drop_in_disposal=False
+                )
+
+                result.update({
+                    "return_position": f"{electrode_rack_id}:A2"
+                })
+
+            else:
+                raise ValueError(f"Unknown electrode operation type: {operation_type}")
+
+            if wait_after > 0:
+                self.controller.delay(wait_after, f"Post-operation wait: {params.get('uo_name', 'Electrode Manipulation')}")
+
+            self.log_operation("sdl1ElectrodeManipulation", params, result)
+            return result
+
+        except Exception as e:
+            error_result = {
+                "status": "error",
+                "operation": "electrode_manipulation",
+                "operation_type": operation_type,
+                "error": str(e)
+            }
+            self.log_operation("sdl1ElectrodeManipulation", params, error_result)
             return error_result
     
     def sdl1ElectrochemicalMeasurement(self, params: Dict[str, Any]) -> Dict[str, Any]:
@@ -749,6 +1050,200 @@ class SDL1Operations:
             
             self.log_operation("sdl1WashCleaning", params, result)
             return result
+
+        except Exception as e:
+            error_result = {
+                "status": "error",
+                "operation": "wash_cleaning",
+                "error": str(e)
+            }
+            self.log_operation("sdl1WashCleaning", params, error_result)
+            return error_result
+
+    def sdl1HardwareWashing(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Hardware Washing Unit Operation
+        Enhanced washing with Arduino pumps and ultrasonic cleaning
+        """
+        try:
+            # Extract parameters
+            target_cell = params.get("target_cell", "A1")
+            initial_drain_volume = params.get("initial_drain_volume", 10.0)
+            rinse_volume = params.get("rinse_volume", 4.0)
+            ultrasonic_duration = params.get("ultrasonic_duration", 5000)  # milliseconds
+            final_rinse_volume = params.get("final_rinse_volume", 10.0)
+            arduino_com_port = params.get("arduino_com_port", "COM3")
+
+            # Movement parameters
+            approach_speed = params.get("approach_speed", 50)
+            insertion_speed = params.get("insertion_speed", 25)
+            flush_pickup_offset_x = params.get("flush_pickup_offset_x", 0.6)
+            flush_pickup_offset_y = params.get("flush_pickup_offset_y", 0.5)
+            flush_insert_offset_x = params.get("flush_insert_offset_x", 0.5)
+            flush_insert_offset_y = params.get("flush_insert_offset_y", 0.5)
+            flush_approach_z = params.get("flush_approach_z", 5)
+            flush_final_z = params.get("flush_final_z", -57)
+            flush_return_offset_z = params.get("flush_return_offset_z", 6)
+
+            # Wait times
+            wait_before = params.get("wait_before", 0)
+            wait_after = params.get("wait_after", 2)
+
+            if wait_before > 0:
+                self.controller.delay(wait_before, f"Pre-operation wait: {params.get('uo_name', 'Hardware Washing')}")
+
+            # Get labware IDs
+            electrode_rack_id = self.controller.labware_registry["slot_10"]["id"]
+            reactor_id = self.controller.labware_registry["slot_9"]["id"]
+            pipette_type = params.get("pipette_type", "p1000_single_gen2")
+
+            # Step 1: Pick up flush tool from electrode rack
+            self.controller.move_to_well(
+                labware_name=electrode_rack_id,
+                well_name="B1",  # Flush tool position
+                pipette_name=pipette_type,
+                offset_start="top",
+                offset_x=flush_pickup_offset_x,
+                offset_y=flush_pickup_offset_y,
+                offset_z=3,
+                speed=approach_speed
+            )
+
+            # Pickup flush tool
+            self.controller.pickup_tip(
+                labware_name=electrode_rack_id,
+                well_name="B1",
+                pipette_name=pipette_type,
+                offset_x=flush_pickup_offset_x,
+                offset_y=flush_pickup_offset_y
+            )
+
+            # Step 2: Move to reactor cell (approach)
+            self.controller.move_to_well(
+                labware_name=reactor_id,
+                well_name=target_cell,
+                pipette_name=pipette_type,
+                offset_start="top",
+                offset_x=flush_insert_offset_x,
+                offset_y=flush_insert_offset_y,
+                offset_z=flush_approach_z,
+                speed=approach_speed
+            )
+
+            # Step 3: Insert flush tool to cleaning depth
+            self.controller.move_to_well(
+                labware_name=reactor_id,
+                well_name=target_cell,
+                pipette_name=pipette_type,
+                offset_start="top",
+                offset_x=flush_insert_offset_x,
+                offset_y=flush_insert_offset_y,
+                offset_z=flush_final_z,
+                speed=insertion_speed
+            )
+
+            # Step 4: Arduino-controlled cleaning sequence
+            cleaning_status = "simulated"
+            if ARDUINO_AVAILABLE:
+                try:
+                    ac = Arduino(arduino_com_port)
+
+                    # Initial drain
+                    if initial_drain_volume > 0:
+                        ac.dispense_ml(2, initial_drain_volume)
+                        self.controller.delay(1, "Initial drain")
+
+                    # Rinse cycle
+                    if rinse_volume > 0:
+                        ac.dispense_ml(1, rinse_volume)
+                        self.controller.delay(1, "Rinse cycle")
+
+                    # Ultrasonic cleaning
+                    if ultrasonic_duration > 0:
+                        ac.setUltrasonicOnTimer(0, ultrasonic_duration)
+                        self.controller.delay(ultrasonic_duration / 1000, "Ultrasonic cleaning")
+
+                    # Final rinse
+                    if final_rinse_volume > 0:
+                        ac.dispense_ml(2, final_rinse_volume)
+                        self.controller.delay(1, "Final rinse")
+
+                    ac.connection.close()
+                    cleaning_status = "completed"
+
+                except Exception as arduino_error:
+                    logging.warning(f"Arduino cleaning failed, using simulation: {arduino_error}")
+                    # Fall back to simulation
+                    total_clean_time = (ultrasonic_duration / 1000) + 3  # Ultrasonic + pump times
+                    self.controller.delay(total_clean_time, "Simulating cleaning sequence")
+                    cleaning_status = "simulated_fallback"
+            else:
+                # Simulate cleaning sequence
+                total_clean_time = (ultrasonic_duration / 1000) + 3  # Ultrasonic + pump times
+                self.controller.delay(total_clean_time, "Simulating cleaning sequence")
+
+            # Step 5: Withdraw flush tool
+            self.controller.move_to_well(
+                labware_name=reactor_id,
+                well_name=target_cell,
+                pipette_name=pipette_type,
+                offset_start="top",
+                offset_x=flush_insert_offset_x,
+                offset_y=flush_insert_offset_y,
+                offset_z=flush_return_offset_z,
+                speed=insertion_speed
+            )
+
+            # Step 6: Return flush tool to rack
+            self.controller.move_to_well(
+                labware_name=electrode_rack_id,
+                well_name="B1",
+                pipette_name=pipette_type,
+                offset_start="top",
+                offset_x=flush_pickup_offset_x,
+                offset_y=flush_pickup_offset_y,
+                offset_z=flush_return_offset_z,
+                speed=approach_speed
+            )
+
+            # Drop flush tool
+            self.controller.drop_tip(
+                labware_name=electrode_rack_id,
+                well_name="B1",
+                pipette_name=pipette_type,
+                offset_start="bottom",
+                offset_x=flush_pickup_offset_x,
+                offset_y=flush_pickup_offset_y,
+                offset_z=flush_return_offset_z,
+                drop_in_disposal=False
+            )
+
+            if wait_after > 0:
+                self.controller.delay(wait_after, f"Post-operation wait: {params.get('uo_name', 'Hardware Washing')}")
+
+            result = {
+                "status": "success",
+                "operation": "hardware_washing",
+                "target_cell": target_cell,
+                "cleaning_status": cleaning_status,
+                "initial_drain_volume": initial_drain_volume,
+                "rinse_volume": rinse_volume,
+                "ultrasonic_duration": ultrasonic_duration,
+                "final_rinse_volume": final_rinse_volume,
+                "arduino_port": arduino_com_port
+            }
+
+            self.log_operation("sdl1HardwareWashing", params, result)
+            return result
+
+        except Exception as e:
+            error_result = {
+                "status": "error",
+                "operation": "hardware_washing",
+                "error": str(e)
+            }
+            self.log_operation("sdl1HardwareWashing", params, error_result)
+            return error_result
             
         except Exception as e:
             error_result = {

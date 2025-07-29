@@ -133,13 +133,61 @@ class PrefectWorkflowManager:
         logger = get_run_logger()
         loop_count = params.get('loop_count', 1)
         logger.info(f"Configuring sequence control: {loop_count} loops")
-        
+
         try:
             result = self.sdl1_ops.sdl1SequenceControl(params)
             logger.info(f"Sequence control completed: {result.get('status')}")
             return result
         except Exception as e:
             logger.error(f"Sequence control failed: {str(e)}")
+            raise
+
+    @task(name="SDL1 Sample Preparation", retries=2, retry_delay_seconds=10)
+    def sample_preparation_task(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Prefect task for sample preparation with additives"""
+        logger = get_run_logger()
+        target_cell = params.get('target_cell', 'A1')
+        total_volume = params.get('total_volume', 3000)
+        logger.info(f"Starting sample preparation: {total_volume}μL in cell {target_cell}")
+
+        try:
+            result = self.sdl1_ops.sdl1SamplePreparation(params)
+            logger.info(f"Sample preparation completed: {result.get('status')}")
+            return result
+        except Exception as e:
+            logger.error(f"Sample preparation failed: {str(e)}")
+            raise
+
+    @task(name="SDL1 Electrode Manipulation", retries=2, retry_delay_seconds=10)
+    def electrode_manipulation_task(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Prefect task for electrode manipulation operations"""
+        logger = get_run_logger()
+        operation_type = params.get('operation_type', 'pickup')
+        electrode_type = params.get('electrode_type', 'reference')
+        logger.info(f"Starting electrode manipulation: {operation_type} {electrode_type}")
+
+        try:
+            result = self.sdl1_ops.sdl1ElectrodeManipulation(params)
+            logger.info(f"Electrode manipulation completed: {result.get('status')}")
+            return result
+        except Exception as e:
+            logger.error(f"Electrode manipulation failed: {str(e)}")
+            raise
+
+    @task(name="SDL1 Hardware Washing", retries=1, retry_delay_seconds=15)
+    def hardware_washing_task(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Prefect task for hardware washing with Arduino control"""
+        logger = get_run_logger()
+        target_cell = params.get('target_cell', 'A1')
+        ultrasonic_duration = params.get('ultrasonic_duration', 5000)
+        logger.info(f"Starting hardware washing: cell {target_cell}, ultrasonic {ultrasonic_duration}ms")
+
+        try:
+            result = self.sdl1_ops.sdl1HardwareWashing(params)
+            logger.info(f"Hardware washing completed: {result.get('status')}")
+            return result
+        except Exception as e:
+            logger.error(f"Hardware washing failed: {str(e)}")
             raise
     
     @task(name="SDL1 Cycle Counter", retries=1, retry_delay_seconds=5)
@@ -163,9 +211,12 @@ class PrefectWorkflowManager:
         task_map = {
             "sdl1ExperimentSetup": self.experiment_setup_task,
             "sdl1SolutionPreparation": self.solution_preparation_task,
+            "sdl1SamplePreparation": self.sample_preparation_task,  # New operation
             "sdl1ElectrodeSetup": self.electrode_setup_task,
+            "sdl1ElectrodeManipulation": self.electrode_manipulation_task,  # New operation
             "sdl1ElectrochemicalMeasurement": self.electrochemical_measurement_task,
             "sdl1WashCleaning": self.wash_cleaning_task,
+            "sdl1HardwareWashing": self.hardware_washing_task,  # New operation
             "sdl1DataExport": self.data_export_task,
             "sdl1SequenceControl": self.sequence_control_task,
             "sdl1CycleCounter": self.cycle_counter_task

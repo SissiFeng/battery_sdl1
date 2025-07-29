@@ -46,9 +46,12 @@ class WorkflowMapper:
             # SDL1 Unit Operations (Canvas format)
             "sdl1ExperimentSetup": self.sdl1_ops.sdl1ExperimentSetup,
             "sdl1SolutionPreparation": self.sdl1_ops.sdl1SolutionPreparation,
+            "sdl1SamplePreparation": self.sdl1_ops.sdl1SamplePreparation,  # New operation
             "sdl1ElectrodeSetup": self.sdl1_ops.sdl1ElectrodeSetup,
+            "sdl1ElectrodeManipulation": self.sdl1_ops.sdl1ElectrodeManipulation,  # New operation
             "sdl1ElectrochemicalMeasurement": self.sdl1_ops.sdl1ElectrochemicalMeasurement,
             "sdl1WashCleaning": self.sdl1_ops.sdl1WashCleaning,
+            "sdl1HardwareWashing": self.sdl1_ops.sdl1HardwareWashing,  # New operation
             "sdl1DataExport": self.sdl1_ops.sdl1DataExport,
             "sdl1SequenceControl": self.sdl1_ops.sdl1SequenceControl,
             "sdl1CycleCounter": self.sdl1_ops.sdl1CycleCounter
