@@ -1,0 +1,31 @@
+# ADVANCED FEATURES - SEPARATE ENVIRONMENT
+# WARNING: DO NOT install these in the same environment as Opentrons
+# Create a separate virtual environment for these features
+
+# Workflow management (Prefect)
+prefect>=2.10.0,<3.0.0
+prefect-shell>=0.1.0
+
+# NIMO optimization
+nimo>=1.0.8
+physbo>=2.2.0
+
+# Advanced data processing
+matplotlib>=3.5.0
+scipy>=1.9.0
+seaborn>=0.11.0
+
+# Machine learning
+scikit-learn>=1.0.0
+tensorflow>=2.10.0  # Optional
+
+# Development tools
+pytest>=7.0.0
+pytest-asyncio>=0.20.0
+black>=22.0.0
+flake8>=4.0.0
+
+# Note: These packages require:
+# - numpy>=1.20.0 (conflicts with Opentrons numpy<2.0)
+# - pydantic>=1.10.0 (conflicts with Opentrons pydantic==1.8.2)
+# - jsonschema>=4.0.0 (conflicts with Opentrons jsonschema==3.0.2)

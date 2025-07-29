@@ -1,21 +1,23 @@
 # Core dependencies for basic functionality
 # Install these first to avoid conflicts
+# STRICT VERSION CONTROL for Opentrons compatibility
 
-# Fixed anyio version for Opentrons compatibility
+# Critical: Fixed versions for Opentrons ecosystem
 anyio==3.3.0
+jsonschema==3.0.2
+pydantic==1.8.2
+numpy>=1.15.1,<2.0.0
 
-# Opentrons and lab automation
+# Opentrons and lab automation (must be installed after above)
 opentrons==7.1.0
 
-# Core API dependencies (compatible versions)
+# Core API dependencies (compatible with Opentrons constraints)
 fastapi>=0.95.0,<0.100.0
 uvicorn[standard]>=0.20.0,<0.25.0
-pydantic>=1.10.0,<2.0.0
 python-multipart>=0.0.5
 
-# Data processing and analysis
+# Data processing (compatible versions)
 pandas>=1.5.0,<2.0.0
-numpy>=1.21.0,<1.25.0
 
 # Networking and requests
 requests>=2.28.0

@@ -50,19 +50,58 @@ REM pipをアップグレード
 echo pipをアップグレード中...
 python -m pip install --upgrade pip
 
-REM ステップ1: コア依存関係のインストール
+REM ステップ1: 依存関係の競合チェック
 echo.
 echo ========================================
-echo ステップ1: コア依存関係をインストール中...
+echo ステップ1: 既存パッケージの確認と削除...
 echo ========================================
-pip install -r requirements-core.txt
+echo 依存関係の競合を避けるため、既存のパッケージを削除します...
+pip uninstall -y numpy pandas pydantic jsonschema anyio fastapi uvicorn opentrons nimo physbo prefect 2>nul
+
+REM ステップ2: Opentrons互換環境のインストール
+echo.
+echo ========================================
+echo ステップ2: Opentrons互換環境をインストール中...
+echo ========================================
+echo 重要: この順序でインストールしてください
+echo.
+
+echo 1/5: 重要な依存関係を固定バージョンでインストール...
+pip install anyio==3.3.0 jsonschema==3.0.2 pydantic==1.8.2 "numpy>=1.15.1,<2.0.0"
 if %ERRORLEVEL% neq 0 (
-    echo.
-    echo エラー: コア依存関係のインストールに失敗しました。
-    echo 手動インストールを試してください:
-    echo   pip install anyio==3.3.0
-    echo   pip install opentrons==7.1.0
-    echo   pip install "fastapi>=0.95.0,<0.100.0"
+    echo エラー: 基本依存関係のインストールに失敗
+    pause
+    goto :end
+)
+
+echo 2/5: Opentronsをインストール...
+pip install opentrons==7.1.0
+if %ERRORLEVEL% neq 0 (
+    echo エラー: Opentronsのインストールに失敗
+    pause
+    goto :end
+)
+
+echo 3/5: Web APIをインストール...
+pip install fastapi==0.95.2 uvicorn==0.20.0 python-multipart==0.0.5
+if %ERRORLEVEL% neq 0 (
+    echo エラー: Web APIのインストールに失敗
+    pause
+    goto :end
+)
+
+echo 4/5: ユーティリティをインストール...
+pip install "requests>=2.28.0,<3.0.0" "pyserial>=3.4,<4.0.0" "watchdog>=3.0.0,<4.0.0" "python-dateutil>=2.8.0,<3.0.0"
+if %ERRORLEVEL% neq 0 (
+    echo エラー: ユーティリティのインストールに失敗
+    pause
+    goto :end
+)
+
+echo 5/5: データ処理をインストール...
+pip install "pandas>=1.5.0,<2.0.0"
+if %ERRORLEVEL% neq 0 (
+    echo エラー: データ処理ライブラリのインストールに失敗
     pause
     goto :end
 )
@@ -79,19 +118,30 @@ if %ERRORLEVEL% neq 0 (
     goto :end
 )
 
-REM オプション機能のインストール確認
+REM 高度な機能のインストール確認
 echo.
-set /p install_optional="オプション機能（Prefect等）もインストールしますか？ (y/n): "
-if /i "%install_optional%"=="y" (
+echo ========================================
+echo 高度な機能について
+echo ========================================
+echo.
+echo ⚠️ 重要な注意事項:
+echo Prefect、NIMO、PhysBOなどの高度な機能は
+echo Opentronsと依存関係が競合します。
+echo.
+echo これらの機能が必要な場合は、別の仮想環境で
+echo requirements-advanced-separate.txt を使用してください。
+echo.
+echo 現在の環境では基本的なSDL1機能のみ利用可能です。
+echo.
+set /p install_test="テスト機能のみインストールしますか？ (y/n): "
+if /i "%install_test%"=="y" (
     echo.
-    echo ========================================
-    echo ステップ2: オプション機能をインストール中...
-    echo ========================================
-    pip install -r requirements-optional.txt
+    echo テスト機能をインストール中...
+    pip install pytest>=7.0.0 pytest-asyncio>=0.20.0
     if %ERRORLEVEL% neq 0 (
-        echo ⚠️ オプション機能のインストールに失敗しましたが、基本機能は使用できます。
+        echo ⚠️ テスト機能のインストールに失敗しましたが、基本機能は使用できます。
     ) else (
-        echo ✅ オプション機能のインストール成功
+        echo ✅ テスト機能のインストール成功
     )
 )
 

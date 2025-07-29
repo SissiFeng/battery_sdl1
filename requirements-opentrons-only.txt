@@ -1,0 +1,34 @@
+# OPENTRONS-ONLY ENVIRONMENT
+# Use this for maximum compatibility with Opentrons ecosystem
+# This creates a minimal, conflict-free environment
+
+# Step 1: Install these exact versions first (critical for Opentrons)
+anyio==3.3.0
+jsonschema==3.0.2
+pydantic==1.8.2
+numpy>=1.15.1,<2.0.0
+
+# Step 2: Install Opentrons
+opentrons==7.1.0
+
+# Step 3: Basic web API (compatible versions)
+fastapi==0.95.2
+uvicorn==0.20.0
+python-multipart==0.0.5
+
+# Step 4: Essential utilities
+requests>=2.28.0,<3.0.0
+pyserial>=3.4,<4.0.0
+watchdog>=3.0.0,<4.0.0
+python-dateutil>=2.8.0,<3.0.0
+
+# Step 5: Data processing (Opentrons-compatible)
+pandas>=1.5.0,<2.0.0
+
+# DO NOT INSTALL:
+# - prefect (conflicts with pydantic)
+# - nimo (conflicts with numpy)
+# - physbo (conflicts with numpy)
+# - matplotlib (may conflict)
+# - scipy (may conflict)
+# - newer versions of pydantic, numpy, jsonschema

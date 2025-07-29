@@ -1,17 +1,22 @@
 # Optional dependencies for advanced features
-# Install these after core dependencies if needed
+# WARNING: Install these ONLY after core dependencies are working
+# Some packages may conflict with Opentrons requirements
 
-# Workflow management (Prefect)
-prefect>=2.10.0,<3.0.0
-prefect-shell>=0.1.0
-
-# Development and testing
+# Development and testing (safe to install)
 pytest>=7.0.0
 pytest-asyncio>=0.20.0
 
 # Electrochemical measurements (Squidstat)
 # PySide6>=6.5.0  # Uncomment if Squidstat libraries are available
 
-# Additional data processing
-matplotlib>=3.5.0
-scipy>=1.9.0
+# Additional data processing (may cause conflicts)
+# matplotlib>=3.5.0  # May conflict with numpy requirements
+# scipy>=1.9.0       # May conflict with numpy requirements
+
+# Workflow management (CONFLICTS with Opentrons - install separately if needed)
+# prefect>=2.10.0,<3.0.0    # Conflicts with pydantic and other versions
+# prefect-shell>=0.1.0      # Requires newer dependencies
+
+# NIMO optimization (CONFLICTS - do not install with Opentrons)
+# nimo>=1.0.8               # Requires numpy<2, conflicts with newer versions
+# physbo>=2.2.0             # Requires numpy<2.0, conflicts
