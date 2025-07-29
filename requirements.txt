@@ -1,8 +1,9 @@
-# Core API dependencies
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-pydantic==2.5.0
-python-multipart==0.0.6
+# Core API dependencies (compatible versions)
+fastapi>=0.95.0,<0.100.0
+uvicorn[standard]>=0.20.0,<0.25.0
+pydantic>=1.10.0,<2.0.0
+python-multipart>=0.0.5
+anyio==3.3.0
 
 # Opentrons and lab automation
 opentrons==7.1.0
@@ -14,9 +15,9 @@ numpy==1.24.3
 # Networking and requests
 requests==2.31.0
 
-# Workflow management
-prefect==2.14.0
-prefect-shell==0.2.0
+# Workflow management (optional - install separately if needed)
+# prefect>=2.10.0
+# prefect-shell>=0.1.0
 
 # Optional dependencies for full functionality
 # Electrochemical measurements (Squidstat)
