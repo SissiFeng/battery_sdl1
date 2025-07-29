@@ -1,0 +1,58 @@
+{
+  "hardware_config": {
+    "opentrons": {
+      "robot_ip": "169.254.69.185",
+      "robot_port": 80,
+      "connection_timeout": 30,
+      "api_version": "2.14"
+    },
+    "squidstat": {
+      "com_port": "COM4",
+      "channel": 0,
+      "baud_rate": 115200,
+      "timeout": 10
+    },
+    "arduino": {
+      "com_port": "COM3",
+      "baud_rate": 9600,
+      "timeout": 5
+    }
+  },
+  "labware_config": {
+    "slot_1": {
+      "type": "opentrons_96_tiprack_1000ul",
+      "name": "tip_rack"
+    },
+    "slot_2": {
+      "type": "custom_vial_rack_24_2ml",
+      "name": "vial_rack_2"
+    },
+    "slot_9": {
+      "type": "custom_nis_reactor_15_well",
+      "name": "nis_reactor"
+    },
+    "slot_10": {
+      "type": "custom_electrode_rack_12_well",
+      "name": "electrode_rack"
+    }
+  },
+  "workflow_directories": {
+    "input_dir": "./data/workflows/input",
+    "processing_dir": "./data/workflows/processing",
+    "completed_dir": "./data/workflows/completed",
+    "failed_dir": "./data/workflows/failed"
+  },
+  "file_monitoring": {
+    "enabled": true,
+    "check_interval": 5,
+    "supported_formats": [".json"],
+    "auto_execute": false,
+    "backup_originals": true
+  },
+  "safety_settings": {
+    "max_volume_per_transfer": 1000,
+    "max_pipette_speed": 400,
+    "emergency_stop_enabled": true,
+    "hardware_validation_required": true
+  }
+}
